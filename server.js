@@ -31,6 +31,22 @@ app.get('/saudacao/:nome', (req, res) =>{
     });
 });
 
+const meusProjetos = [
+        {id:1, nome:'Balsamo Agenda', tecnologia: 'NodeJS', status:'Concluido'},
+        {id:2, nome:'Barbearia', tecnologia: 'ReactJS', status:'Em andamendo'}
+    ];
+
+app.get('/projetos/:id', (req, res) =>{
+    // 1. Captura e converte o ID da URL
+    const idBuscado = Number(req.params.id);
+    
+    // 2. Busca no array o projeto que tem o id igual ao idBuscado
+    const projetoEncontrado = meusProjetos.find(projeto => projeto.id === idBuscado);
+    
+    // 3. Devolve o objeto encontrado
+    res.json(projetoEncontrado);
+});
+
 // 4. Ligando o servidor na porta 3000
 app.listen(3000, () => {
     console.log("Servidor do portfólio rodando na porta 3000! 🚀");
