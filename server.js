@@ -1,5 +1,6 @@
 const express = require('express'); //Importa o Express
 const app = express(); //Cria o servidor do portfólio
+app.use(express.json());
 
 //Criando a rota principal API
 app.get('/', (req, res) => {
@@ -43,9 +44,30 @@ app.get('/projetos/:id', (req, res) =>{
     // 2. Busca no array o projeto que tem o id igual ao idBuscado
     const projetoEncontrado = meusProjetos.find(projeto => projeto.id === idBuscado);
     
-    // 3. Devolve o objeto encontrado
-    res.json(projetoEncontrado);
+    // Lemos assim: "Se o projetoEncontrado existir (tiver conteúdo)..."
+    if (projetoEncontrado) {
+        res.json(projetoEncontrado);
+    } else {
+        // Se não existir (for undefined), cai aqui e devolve o erro 404
+        res.status(404).json({ erro: "Projeto não encontrado" });
+    }
+    
 });
+
+app.post('/projetos', (req, res) => {
+    // 1. Captura exatamente o JSON que veio do Thunder Client
+    const novoProjeto = req.body;
+
+    // 2. Cria um ID para ele (já que o usuário não manda ID ao criar)
+    novoProjeto.id = 3;
+
+    // 3. Adiciona no final do seu array
+    meusProjetos.push(novoProjeto);
+
+    // 4. Responde com Status 201 (Criado) e mostra o projeto salvo
+    res.status(201).json(novoProjeto);
+});
+
 
 // 4. Ligando o servidor na porta 3000
 app.listen(3000, () => {
