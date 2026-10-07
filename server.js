@@ -66,6 +66,12 @@ app.post('/projetos', (req, res) => {
     res.status(201).json(novoProjeto);
 });
 
+app.delete('/projetos/:id',(req, res){
+    const idBuscado = Number(req.params.id);
+    const projetoEncontrado = meusProjetos.findIndex(projeto => projeto.id === idBuscado);
+    
+})
+
 
 // 4. Ligando o servidor na porta 3000
 app.listen(3000, () => {
