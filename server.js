@@ -100,19 +100,48 @@ app.delete('/projetos/:id',(req, res) =>{
     }
 });
 
-
+//rota para atualizar um projeto pelo ID
 app.put('/projetos/:id', (req, res) => {
+    // 1. Captura e converte o ID da URL
     const idBuscado = Number(req.params.id);
+    // 2. Captura os dados do corpo da requisição
     const projetoAtualizado = req.body;
-
+    // 3. Busca o índice do projeto no array
     const indiceEncontrado = meusProjetos.findIndex(
         projeto => projeto.id === idBuscado);
+    
+    // 4. Se o índice for -1, significa que o projeto não foi encontrado
+    if (indiceEncontrado === -1) {
+        return res.status(404).json({ 
+            erro: "Projeto não encontrado" });
+    } else if (!projetoAtualizado.nome || !projetoAtualizado.tecnologia || !projetoAtualizado.status) {
+        return res.status(400).json({
+            erro: "Para atualizar o projeto, informe nome, tecnologia e status"
+        });
+    } else {
+    // 5. Atualiza o projeto no array usando spread operator
+        meusProjetos[indiceEncontrado] = { ...meusProjetos[indiceEncontrado], ...projetoAtualizado };
+        res.status(200).json(meusProjetos[indiceEncontrado]);
+    }
+});
 
+//rota para atualizar parcialmente um projeto pelo ID
+app.patch('/projetos/:id', (req, res) => {
+    // 1. Captura e converte o ID da URL
+    const idBuscado = Number(req.params.id);
+    // 2. Captura os dados do corpo da requisição
+    const atualizacao = req.body;
+    // 3. Busca o índice do projeto no array
+    const indiceEncontrado = meusProjetos.findIndex(
+        projeto => projeto.id === idBuscado);
+    
+    // 4. Se o índice for -1, significa que o projeto não foi encontrado
     if (indiceEncontrado === -1) {
         return res.status(404).json({ 
             erro: "Projeto não encontrado" });
     } else {
-        meusProjetos[indiceEncontrado] = { ...meusProjetos[indiceEncontrado], ...projetoAtualizado };
+    // 5. Atualiza o projeto no array usando spread operator (em outras palavras está dizendo: "pegue o projeto que já existe e atualize com os novos dados")
+        meusProjetos[indiceEncontrado] = { ...meusProjetos[indiceEncontrado], ...atualizacao };
         res.status(200).json(meusProjetos[indiceEncontrado]);
     }
 });
