@@ -53,24 +53,69 @@ app.get('/projetos/:id', (req, res) =>{
 
 //rota para criar um novo projeto
 app.post('/projetos', (req, res) => {
-    // 1. Captura exatamente o JSON que veio do Thunder Client
-    const novoProjeto = req.body;
+    // 1. Captura os dados do corpo da requisição
+    const { nome, tecnologia, status } = req.body;
 
-    // 2. Cria um ID para ele (simplesmente o tamanho do array + 1)
-    novoProjeto.id = meusProjetos.length + 1;
+    // 2. Valida se todos os campos foram informados
+    if (!nome || !tecnologia || !status) {
+        return res.status(400).json({
+            erro: "Informe nome, tecnologia e status do projeto"
+        });
+    }
 
-    // 3. Adiciona no final do seu array
+    // 3. Cria um novo projeto com ID incremental
+    const novoProjeto = {
+        id: meusProjetos.length + 1,
+        nome,
+        tecnologia,
+        status
+    };
+
+    // 4. Adiciona o novo projeto ao array
     meusProjetos.push(novoProjeto);
 
-    // 4. Responde com Status 201 (Criado) e mostra o projeto salvo
+    // 5. Retorna o novo projeto criado com status 201 (Created)
     res.status(201).json(novoProjeto);
 });
 
-app.delete('/projetos/:id',(req, res){
+//rota para deletar um projeto pelo ID
+app.delete('/projetos/:id',(req, res) =>{
+    // 1. Captura e converte o ID da URL
     const idBuscado = Number(req.params.id);
-    const projetoEncontrado = meusProjetos.findIndex(projeto => projeto.id === idBuscado);
+
+    // 2. Busca o índice do projeto no array
+    const indiceEncontrado = meusProjetos.findIndex(
+        projeto => projeto.id === idBuscado);
     
-})
+    // 3. Se o índice for -1, significa que o projeto não foi encontrado
+    if (indiceEncontrado === -1) {
+        return res.status(404).json({ 
+            erro: "Projeto não encontrado" });
+    } else {
+    // 4. Remove o projeto do array usando splice
+        meusProjetos.splice(indiceEncontrado, 1);
+
+    // 5. Retorna uma mensagem de sucesso
+        res.status(200).json({ mensagem: "Projeto excluído com sucesso!" });
+    }
+});
+
+
+app.put('/projetos/:id', (req, res) => {
+    const idBuscado = Number(req.params.id);
+    const projetoAtualizado = req.body;
+
+    const indiceEncontrado = meusProjetos.findIndex(
+        projeto => projeto.id === idBuscado);
+
+    if (indiceEncontrado === -1) {
+        return res.status(404).json({ 
+            erro: "Projeto não encontrado" });
+    } else {
+        meusProjetos[indiceEncontrado] = { ...meusProjetos[indiceEncontrado], ...projetoAtualizado };
+        res.status(200).json(meusProjetos[indiceEncontrado]);
+    }
+});
 
 
 // 4. Ligando o servidor na porta 3000
