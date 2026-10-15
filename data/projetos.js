@@ -3,5 +3,4 @@ const meusProjetos = [
     { id: 2, nome: "Barbearia", tecnologia: "ReactJS", status: "Em andamento" }
 ];
 
-
 module.exports = meusProjetos;

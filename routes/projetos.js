@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const meusProjetos = require('../data/projetos');
 
+let proximoId = Math.max(
+    ...meusProjetos.map(projeto => projeto.id),
+    0
+) + 1;
+
 router.get('/', (req, res) => {
     res.json(meusProjetos);
 });
@@ -39,7 +44,7 @@ router.post('/', (req, res) => {
 
     // 3. Cria um novo projeto com ID incremental
     const novoProjeto = {
-        id: meusProjetos.length + 1,
+        id: proximoId,
         nome,
         tecnologia,
         status
@@ -47,6 +52,7 @@ router.post('/', (req, res) => {
 
     // 4. Adiciona o novo projeto ao array
     meusProjetos.push(novoProjeto);
+    proximoId++;
 
     // 5. Retorna o novo projeto criado com status 201 (Created)
     res.status(201).json(novoProjeto);
@@ -103,15 +109,14 @@ router.patch('/:id', (req, res) => {
             erro: "Projeto não encontrado" });
     } else {
     // 5. Atualiza o projeto no array usando spread operator (em outras palavras está dizendo: "pegue o projeto que já existe e atualize com os novos dados")
-        meusProjetos[indiceEncontrado] = { ...meusProjetos[indiceEncontrado], ...atualizacao };
-        res.status(200).json(meusProjetos[indiceEncontrado]);
-    }
-
     meusProjetos[indiceEncontrado] = {
     ...meusProjetos[indiceEncontrado],
     ...atualizacao,
     id: idBuscado
-};
+        };
+    }
+
+    res.status(200).json(meusProjetos[indiceEncontrado]);
 });
 
 //rota para deletar um projeto pelo ID
