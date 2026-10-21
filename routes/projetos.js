@@ -93,31 +93,79 @@ router.put('/:id', (req, res) => {
     res.status(200).json(meusProjetos[indiceEncontrado]);
 });
 
-//rota para atualizar parcialmente um projeto pelo ID
+
 router.patch('/:id', (req, res) => {
     // 1. Captura e converte o ID da URL
     const idBuscado = Number(req.params.id);
-    // 2. Captura os dados do corpo da requisição
-    const atualizacao = req.body;
-    // 3. Busca o índice do projeto no array
-    const indiceEncontrado = meusProjetos.findIndex(
-        projeto => projeto.id === idBuscado);
-    
-    // 4. Se o índice for -1, significa que o projeto não foi encontrado
-    if (indiceEncontrado === -1) {
-        return res.status(404).json({ 
-            erro: "Projeto não encontrado" });
-    } else {
-    // 5. Atualiza o projeto no array usando spread operator (em outras palavras está dizendo: "pegue o projeto que já existe e atualize com os novos dados")
-    meusProjetos[indiceEncontrado] = {
-    ...meusProjetos[indiceEncontrado],
-    ...atualizacao,
-    id: idBuscado
-        };
-    }
 
-    res.status(200).json(meusProjetos[indiceEncontrado]);
+    // 2. Captura os dados enviados
+    const atualizacao = req.body;
+
+    // 3. Busca o índice do projeto
+    const indiceEncontrado = meusProjetos.findIndex(
+        projeto => projeto.id === idBuscado
+    );
+
+    // 4. Verifica se o projeto existe
+    if (indiceEncontrado === -1) {
+        return res.status(404).json({
+            erro: "Projeto não encontrado"
+        });
+    } else {
+        // 5. Define os campos que podem ser atualizados
+        const camposPermitidos = [
+            'nome',
+            'tecnologia',
+            'status'
+        ];
+
+        // 6. Verifica se existem campos não permitidos
+        const camposRecebidos = Object.keys(atualizacao);
+
+        const camposInvalidos = camposRecebidos.filter(
+            campo => !camposPermitidos.includes(campo)
+        );
+
+        if (camposInvalidos.length > 0) {
+            return res.status(400).json({
+                erro: "Existem campos não permitidos",
+                campos: camposInvalidos
+            });
+        }
+
+        // 7. Verifica se foi enviado pelo menos um campo
+        if (camposRecebidos.length === 0) {
+            return res.status(400).json({
+                erro: "Informe ao menos um campo para atualizar"
+            });
+        }
+
+        // 8. Valida os valores recebidos
+        const valoresInvalidos = camposRecebidos.some(campo => {
+            return typeof atualizacao[campo] !== 'string' ||
+                   atualizacao[campo].trim() === '';
+        });
+
+        if (valoresInvalidos) {
+            return res.status(400).json({
+                erro: "Os campos devem conter textos não vazios"
+            });
+        }
+
+        // 9. Atualiza o projeto
+        meusProjetos[indiceEncontrado] = {
+            ...meusProjetos[indiceEncontrado],
+            ...atualizacao,
+            id: idBuscado
+        };
+
+        // 10. Retorna o projeto atualizado
+        return res.status(200).json(
+            meusProjetos[indiceEncontrado]
+        );
+    }
 });
+
 
 //rota para deletar um projeto pelo ID
 router.delete('/:id',(req, res) =>{
