@@ -2,6 +2,12 @@ const express = require('express');
 const router = express.Router();
 const meusProjetos = require('../data/projetos');
 
+const statusPermitidos = [
+    "Em desenvolvimento",
+    "Concluído",
+    "Em planejamento"
+];
+
 let proximoId = Math.max(
     ...meusProjetos.map(projeto => projeto.id),
     0
@@ -61,11 +67,17 @@ router.post('/', (req, res) => {
 
 router.put('/:id', (req, res) => {
     const idBuscado = Number(req.params.id);
-    const projetoAtualizado = req.body;
+    const atualizacao = req.body;
 
     const indiceEncontrado = meusProjetos.findIndex(
         projeto => projeto.id === idBuscado
     );
+
+    const camposRecebidos = Object.keys(atualizacao);
+    const valoresInvalidos = camposRecebidos.some(campo => {
+        return typeof atualizacao[campo] !== 'string' ||
+            atualizacao[campo].trim() === '';
+    });
 
     if (indiceEncontrado === -1) {
         return res.status(404).json({
@@ -73,22 +85,41 @@ router.put('/:id', (req, res) => {
         });
     }
 
+    if (valoresInvalidos) {
+        return res.status(400).json({
+            erro: "Os campos devem conter textos não vazios"
+        });
+    }
+
+
     if (
-        !projetoAtualizado.nome ||
-        !projetoAtualizado.tecnologia ||
-        !projetoAtualizado.status
+        !atualizacao.nome ||
+        !atualizacao.tecnologia ||
+        !atualizacao.status
     ) {
         return res.status(400).json({
             erro: "Para atualizar o projeto, informe nome, tecnologia e status"
         });
     }
 
-    meusProjetos[indiceEncontrado] = {
-        id: idBuscado,
-        nome: projetoAtualizado.nome,
-        tecnologia: projetoAtualizado.tecnologia,
-        status: projetoAtualizado.status
-    };
+    
+    
+    if (
+        atualizacao.status !== undefined &&
+        !statusPermitidos.includes(atualizacao.status)
+    ) {
+        return res.status(400).json({
+            erro: "Status inválido",
+            statusPermitidos
+        });
+    }
+
+     // 9. Atualiza o projeto
+        meusProjetos[indiceEncontrado] = {
+            ...meusProjetos[indiceEncontrado],
+            ...atualizacao,
+            id: idBuscado
+        };
 
     res.status(200).json(meusProjetos[indiceEncontrado]);
 });
@@ -149,6 +180,16 @@ router.patch('/:id', (req, res) => {
         if (valoresInvalidos) {
             return res.status(400).json({
                 erro: "Os campos devem conter textos não vazios"
+            });
+        }
+
+        if (
+            atualizacao.status !== undefined &&
+            !statusPermitidos.includes(atualizacao.status)
+        ) {
+            return res.status(400).json({
+                erro: "Status inválido",
+                statusPermitidos
             });
         }
 
