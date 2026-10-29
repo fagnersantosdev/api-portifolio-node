@@ -1,3 +1,4 @@
+
 const express = require('express');
 const router = express.Router();
 const meusProjetos = require('../data/projetos');
@@ -8,10 +9,17 @@ const statusPermitidos = [
     "Em planejamento"
 ];
 
+const camposPermitidos = [
+    "nome",
+    "tecnologia",
+    "status"
+];
+
 let proximoId = Math.max(
     ...meusProjetos.map(projeto => projeto.id),
     0
 ) + 1;
+
 
 router.get('/', (req, res) => {
     res.json(meusProjetos);
@@ -38,52 +46,37 @@ router.get('/:id', (req, res) =>{
 
 //rota para criar um novo projeto
 router.post('/', (req, res) => {
-    // 1. Captura os dados do corpo da requisição
+
+    // 1. Verifica se o corpo é um objeto válido
+    if (
+        !req.body ||
+        typeof req.body !== 'object' ||
+        Array.isArray(req.body)
+    ) {
+        return res.status(400).json({
+            erro: "Envie um objeto JSON válido"
+        });
+    }
+
+    // 2. Captura os dados recebidos
     const { nome, tecnologia, status } = req.body;
 
-    // 2. Valida se todos os campos foram informados
-    if (!nome || !tecnologia || !status) {
+    // 3. Verifica os campos obrigatórios
+    if (
+        nome === undefined ||
+        tecnologia === undefined ||
+        status === undefined
+    ) {
         return res.status(400).json({
-            erro: "Informe nome, tecnologia e status do projeto"
+            erro: "Informe nome, tecnologia e status"
         });
     }
 
-    // 3. Cria um novo projeto com ID incremental
-    const novoProjeto = {
-        id: proximoId,
-        nome,
-        tecnologia,
-        status
-    };
-
-    // 4. Adiciona o novo projeto ao array
-    meusProjetos.push(novoProjeto);
-    proximoId++;
-
-    // 5. Retorna o novo projeto criado com status 201 (Created)
-    res.status(201).json(novoProjeto);
-});
-
-
-router.put('/:id', (req, res) => {
-    const idBuscado = Number(req.params.id);
-    const atualizacao = req.body;
-
-    const indiceEncontrado = meusProjetos.findIndex(
-        projeto => projeto.id === idBuscado
+    // 4. Valida os tipos e valores
+    const valoresInvalidos = [nome, tecnologia, status].some(
+        valor => typeof valor !== 'string' ||
+                 valor.trim() === ''
     );
-
-    const camposRecebidos = Object.keys(atualizacao);
-    const valoresInvalidos = camposRecebidos.some(campo => {
-        return typeof atualizacao[campo] !== 'string' ||
-            atualizacao[campo].trim() === '';
-    });
-
-    if (indiceEncontrado === -1) {
-        return res.status(404).json({
-            erro: "Projeto não encontrado"
-        });
-    }
 
     if (valoresInvalidos) {
         return res.status(400).json({
@@ -91,38 +84,119 @@ router.put('/:id', (req, res) => {
         });
     }
 
-
-    if (
-        !atualizacao.nome ||
-        !atualizacao.tecnologia ||
-        !atualizacao.status
-    ) {
-        return res.status(400).json({
-            erro: "Para atualizar o projeto, informe nome, tecnologia e status"
-        });
-    }
-
-    
-    
-    if (
-        atualizacao.status !== undefined &&
-        !statusPermitidos.includes(atualizacao.status)
-    ) {
+    // 5. Valida o status
+    if (!statusPermitidos.includes(status)) {
         return res.status(400).json({
             erro: "Status inválido",
             statusPermitidos
         });
     }
 
-     // 9. Atualiza o projeto
-        meusProjetos[indiceEncontrado] = {
-            ...meusProjetos[indiceEncontrado],
-            ...atualizacao,
-            id: idBuscado
-        };
+    // 6. Cria o projeto
+    const novoProjeto = {
+        id: proximoId,
+        nome,
+        tecnologia,
+        status
+    };
 
-    res.status(200).json(meusProjetos[indiceEncontrado]);
+    // 7. Adiciona ao array
+    meusProjetos.push(novoProjeto);
+
+    // 8. Incrementa o próximo ID
+    proximoId++;
+
+    // 9. Retorna o projeto criado
+    return res.status(201).json(novoProjeto);
 });
+
+
+
+router.put('/:id', (req, res) => {
+    const idBuscado = Number(req.params.id);
+    const atualizacao = req.body;
+
+    // 1. Verifica se o corpo é um objeto válido
+    if (
+        !atualizacao ||
+        typeof atualizacao !== 'object' ||
+        Array.isArray(atualizacao)
+    ) {
+        return res.status(400).json({
+            erro: "Envie um objeto JSON válido"
+        });
+    }
+
+    // 2. Procura o projeto
+    const indiceEncontrado = meusProjetos.findIndex(
+        projeto => projeto.id === idBuscado
+    );
+
+    if (indiceEncontrado === -1) {
+        return res.status(404).json({
+            erro: "Projeto não encontrado"
+        });
+    }
+
+    // 3. Verifica se todos os campos foram enviados
+    if (
+        !Object.hasOwn(atualizacao, 'nome') ||
+        !Object.hasOwn(atualizacao, 'tecnologia') ||
+        !Object.hasOwn(atualizacao, 'status')
+    ) {
+        return res.status(400).json({
+            erro: "Informe nome, tecnologia e status"
+        });
+    }
+
+    // 4. Identifica os campos recebidos
+    const camposRecebidos = Object.keys(atualizacao);
+
+    // 5. Identifica campos não permitidos
+    const camposInvalidos = camposRecebidos.filter(
+        campo => !camposPermitidos.includes(campo)
+    );
+
+    if (camposInvalidos.length > 0) {
+        return res.status(400).json({
+            erro: "Existem campos não permitidos",
+            campos: camposInvalidos
+        });
+    }
+
+    // 6. Valida os valores
+    const valoresInvalidos = camposRecebidos.some(campo => {
+        return typeof atualizacao[campo] !== 'string' ||
+               atualizacao[campo].trim() === '';
+    });
+
+    if (valoresInvalidos) {
+        return res.status(400).json({
+            erro: "Os campos devem conter textos não vazios"
+        });
+    }
+
+    // 7. Valida o status
+    if (!statusPermitidos.includes(atualizacao.status)) {
+        return res.status(400).json({
+            erro: "Status inválido",
+            statusPermitidos
+        });
+    }
+
+    // 8. Substitui os dados editáveis do projeto
+    meusProjetos[indiceEncontrado] = {
+        id: idBuscado,
+        nome: atualizacao.nome,
+        tecnologia: atualizacao.tecnologia,
+        status: atualizacao.status
+    };
+
+    return res.status(200).json(
+        meusProjetos[indiceEncontrado]
+    );
+});
+
 
 
 router.patch('/:id', (req, res) => {
@@ -142,69 +216,73 @@ router.patch('/:id', (req, res) => {
         return res.status(404).json({
             erro: "Projeto não encontrado"
         });
-    } else {
-        // 5. Define os campos que podem ser atualizados
-        const camposPermitidos = [
-            'nome',
-            'tecnologia',
-            'status'
-        ];
+    } 
 
-        // 6. Verifica se existem campos não permitidos
-        const camposRecebidos = Object.keys(atualizacao);
-
-        const camposInvalidos = camposRecebidos.filter(
-            campo => !camposPermitidos.includes(campo)
-        );
-
-        if (camposInvalidos.length > 0) {
-            return res.status(400).json({
-                erro: "Existem campos não permitidos",
-                campos: camposInvalidos
-            });
-        }
-
-        // 7. Verifica se foi enviado pelo menos um campo
-        if (camposRecebidos.length === 0) {
-            return res.status(400).json({
-                erro: "Informe ao menos um campo para atualizar"
-            });
-        }
-
-        // 8. Valida os valores recebidos
-        const valoresInvalidos = camposRecebidos.some(campo => {
-            return typeof atualizacao[campo] !== 'string' ||
-                   atualizacao[campo].trim() === '';
+    if (
+        !atualizacao ||
+        typeof atualizacao !== 'object' ||
+        Array.isArray(atualizacao)
+    ) {
+        return res.status(400).json({
+            erro: "Envie um objeto JSON válido"
         });
+    }
 
-        if (valoresInvalidos) {
-            return res.status(400).json({
-                erro: "Os campos devem conter textos não vazios"
+    // 6. Verifica se existem campos não permitidos
+    const camposRecebidos = Object.keys(atualizacao);
+
+    const camposInvalidos = camposRecebidos.filter(
+            campo => !camposPermitidos.includes(campo)
+    );
+
+    if (camposInvalidos.length > 0) {
+        return res.status(400).json({
+            erro: "Existem campos não permitidos",
+            campos: camposInvalidos
+        });
+    }
+
+    // 7. Verifica se foi enviado pelo menos um campo
+    if (camposRecebidos.length === 0) {
+        return res.status(400).json({
+            erro: "Informe ao menos um campo para atualizar"
+        });
+    }
+
+    // 8. Valida os valores recebidos
+    const valoresInvalidos = camposRecebidos.some(campo => {
+        return typeof atualizacao[campo] !== 'string' ||
+            atualizacao[campo].trim() === '';
+    });
+
+    if (valoresInvalidos) {
+        return res.status(400).json({
+            erro: "Os campos devem conter textos não vazios"
+        });
+    }
+
+    if (
+        atualizacao.status !== undefined &&
+        !statusPermitidos.includes(atualizacao.status)
+    ) {
+        return res.status(400).json({
+            erro: "Status inválido",
+            statusPermitidos
             });
-        }
+    }
 
-        if (
-            atualizacao.status !== undefined &&
-            !statusPermitidos.includes(atualizacao.status)
-        ) {
-            return res.status(400).json({
-                erro: "Status inválido",
-                statusPermitidos
-            });
-        }
+    // 9. Atualiza o projeto
+    meusProjetos[indiceEncontrado] = {
+    ...meusProjetos[indiceEncontrado],
+    ...atualizacao,
+    id: idBuscado
+    };
 
-        // 9. Atualiza o projeto
-        meusProjetos[indiceEncontrado] = {
-            ...meusProjetos[indiceEncontrado],
-            ...atualizacao,
-            id: idBuscado
-        };
-
-        // 10. Retorna o projeto atualizado
+    // 10. Retorna o projeto atualizado
         return res.status(200).json(
             meusProjetos[indiceEncontrado]
-        );
-    }
+    );
+    
 });
 
 
