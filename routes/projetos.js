@@ -15,6 +15,19 @@ const camposPermitidos = [
     "status"
 ];
 
+
+function validarValores(dados) {
+    const camposRecebidos = Object.keys(dados);
+
+    const valoresInvalidos = camposRecebidos.some(campo => {
+        return typeof dados[campo] !== 'string' ||
+               dados[campo].trim() === '';
+    });
+
+    return valoresInvalidos;
+}
+
+
 let proximoId = Math.max(
     ...meusProjetos.map(projeto => projeto.id),
     0
@@ -72,11 +85,13 @@ router.post('/', (req, res) => {
         });
     }
 
-    // 4. Valida os tipos e valores
-    const valoresInvalidos = [nome, tecnologia, status].some(
-        valor => typeof valor !== 'string' ||
-                 valor.trim() === ''
-    );
+    const valoresInvalidos = validarValores(req.body);
+
+    if (valoresInvalidos) {
+        return res.status(400).json({
+            erro: "Os campos devem conter textos não vazios"
+        });
+    }
 
     if (valoresInvalidos) {
         return res.status(400).json({
@@ -85,7 +100,7 @@ router.post('/', (req, res) => {
     }
 
     // 5. Valida o status
-    if (!statusPermitidos.includes(status)) {
+if (!statusPermitidos.includes(status)) {
         return res.status(400).json({
             erro: "Status inválido",
             statusPermitidos
