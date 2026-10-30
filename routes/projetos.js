@@ -3,29 +3,12 @@ const express = require('express');
 const router = express.Router();
 const meusProjetos = require('../data/projetos');
 
-const statusPermitidos = [
-    "Em desenvolvimento",
-    "Concluído",
-    "Em planejamento"
-];
-
-const camposPermitidos = [
-    "nome",
-    "tecnologia",
-    "status"
-];
-
-
-function validarValores(dados) {
-    const camposRecebidos = Object.keys(dados);
-
-    const valoresInvalidos = camposRecebidos.some(campo => {
-        return typeof dados[campo] !== 'string' ||
-               dados[campo].trim() === '';
-    });
-
-    return valoresInvalidos;
-}
+const {
+    validarValores,
+    verificarCamposInvalidos,
+    validarStatus,
+    statusPermitidos
+} = require('../validators/projetoValidator');
 
 
 let proximoId = Math.max(
@@ -167,10 +150,9 @@ router.put('/:id', (req, res) => {
     // 4. Identifica os campos recebidos
     const camposRecebidos = Object.keys(atualizacao);
 
-    // 5. Identifica campos não permitidos
-    const camposInvalidos = camposRecebidos.filter(
-        campo => !camposPermitidos.includes(campo)
-    );
+    
+    // Verifica se existem campos não permitidos
+    const camposInvalidos = verificarCamposInvalidos(atualizacao);
 
     if (camposInvalidos.length > 0) {
         return res.status(400).json({
@@ -179,25 +161,21 @@ router.put('/:id', (req, res) => {
         });
     }
 
-    // 6. Valida os valores
-    const valoresInvalidos = camposRecebidos.some(campo => {
-        return typeof atualizacao[campo] !== 'string' ||
-               atualizacao[campo].trim() === '';
-    });
-
-    if (valoresInvalidos) {
+    // Verifica os tipos e valores
+    if (validarValores(atualizacao)) {
         return res.status(400).json({
             erro: "Os campos devem conter textos não vazios"
         });
     }
 
-    // 7. Valida o status
-    if (!statusPermitidos.includes(atualizacao.status)) {
+    // Verifica o status
+    if (!validarStatus(atualizacao.status)) {
         return res.status(400).json({
             erro: "Status inválido",
             statusPermitidos
         });
-    }
+}
+
 
     // 8. Substitui os dados editáveis do projeto
     meusProjetos[indiceEncontrado] = {
@@ -211,7 +189,6 @@ router.put('/:id', (req, res) => {
         meusProjetos[indiceEncontrado]
     );
 });
-
 
 
 router.patch('/:id', (req, res) => {
@@ -243,12 +220,14 @@ router.patch('/:id', (req, res) => {
         });
     }
 
-    // 6. Verifica se existem campos não permitidos
-    const camposRecebidos = Object.keys(atualizacao);
+    // 7. Verifica se foi enviado pelo menos um campo
+    if (camposRecebidos.length === 0) {
+        return res.status(400).json({
+            erro: "Informe ao menos um campo para atualizar"
+        });
+    }
 
-    const camposInvalidos = camposRecebidos.filter(
-            campo => !camposPermitidos.includes(campo)
-    );
+    const camposInvalidos = verificarCamposInvalidos(req.body);
 
     if (camposInvalidos.length > 0) {
         return res.status(400).json({
@@ -257,34 +236,20 @@ router.patch('/:id', (req, res) => {
         });
     }
 
-    // 7. Verifica se foi enviado pelo menos um campo
-    if (camposRecebidos.length === 0) {
-        return res.status(400).json({
-            erro: "Informe ao menos um campo para atualizar"
-        });
-    }
-
-    // 8. Valida os valores recebidos
-    const valoresInvalidos = camposRecebidos.some(campo => {
-        return typeof atualizacao[campo] !== 'string' ||
-            atualizacao[campo].trim() === '';
-    });
-
-    if (valoresInvalidos) {
+    if (validarValores(req.body)) {
         return res.status(400).json({
             erro: "Os campos devem conter textos não vazios"
         });
     }
 
-    if (
-        atualizacao.status !== undefined &&
-        !statusPermitidos.includes(atualizacao.status)
-    ) {
+    if (!validarStatus(status)) {
         return res.status(400).json({
             erro: "Status inválido",
             statusPermitidos
-            });
+        });
     }
+
+    
 
     // 9. Atualiza o projeto
     meusProjetos[indiceEncontrado] = {
