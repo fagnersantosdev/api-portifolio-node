@@ -68,6 +68,15 @@ router.post('/', (req, res) => {
         });
     }
 
+    const camposInvalidos = verificarCamposInvalidos(req.body);
+
+    if (camposInvalidos.length > 0) {
+        return res.status(400).json({
+            erro: "Existem campos não permitidos",
+            campos: camposInvalidos
+        });
+    }
+
     const valoresInvalidos = validarValores(req.body);
 
     if (valoresInvalidos) {
@@ -76,14 +85,9 @@ router.post('/', (req, res) => {
         });
     }
 
-    if (valoresInvalidos) {
-        return res.status(400).json({
-            erro: "Os campos devem conter textos não vazios"
-        });
-    }
 
     // 5. Valida o status
-if (!statusPermitidos.includes(status)) {
+    if (!validarStatus(status)) {
         return res.status(400).json({
             erro: "Status inválido",
             statusPermitidos
@@ -147,9 +151,6 @@ router.put('/:id', (req, res) => {
         });
     }
 
-    // 4. Identifica os campos recebidos
-    const camposRecebidos = Object.keys(atualizacao);
-
     
     // Verifica se existem campos não permitidos
     const camposInvalidos = verificarCamposInvalidos(atualizacao);
@@ -191,6 +192,7 @@ router.put('/:id', (req, res) => {
 });
 
 
+
 router.patch('/:id', (req, res) => {
     // 1. Captura e converte o ID da URL
     const idBuscado = Number(req.params.id);
@@ -208,8 +210,9 @@ router.patch('/:id', (req, res) => {
         return res.status(404).json({
             erro: "Projeto não encontrado"
         });
-    } 
+    }
 
+    // 5. Verifica se o corpo é um objeto válido
     if (
         !atualizacao ||
         typeof atualizacao !== 'object' ||
@@ -220,14 +223,18 @@ router.patch('/:id', (req, res) => {
         });
     }
 
-    // 7. Verifica se foi enviado pelo menos um campo
+    // 6. Identifica os campos recebidos
+    const camposRecebidos = Object.keys(atualizacao);
+
+    // 7. Verifica se foi enviado algum campo
     if (camposRecebidos.length === 0) {
         return res.status(400).json({
             erro: "Informe ao menos um campo para atualizar"
         });
     }
 
-    const camposInvalidos = verificarCamposInvalidos(req.body);
+    // 8. Verifica campos não permitidos
+    const camposInvalidos = verificarCamposInvalidos(atualizacao);
 
     if (camposInvalidos.length > 0) {
         return res.status(400).json({
@@ -236,34 +243,37 @@ router.patch('/:id', (req, res) => {
         });
     }
 
-    if (validarValores(req.body)) {
+    // 9. Verifica tipos e valores
+    if (validarValores(atualizacao)) {
         return res.status(400).json({
             erro: "Os campos devem conter textos não vazios"
         });
     }
 
-    if (!validarStatus(status)) {
+    // 10. Valida o status, caso tenha sido enviado
+    if (
+        atualizacao.status !== undefined &&
+        !validarStatus(atualizacao.status)
+    ) {
         return res.status(400).json({
             erro: "Status inválido",
             statusPermitidos
         });
     }
 
-    
-
-    // 9. Atualiza o projeto
+    // 11. Atualiza o projeto
     meusProjetos[indiceEncontrado] = {
-    ...meusProjetos[indiceEncontrado],
-    ...atualizacao,
-    id: idBuscado
+        ...meusProjetos[indiceEncontrado],
+        ...atualizacao,
+        id: idBuscado
     };
 
-    // 10. Retorna o projeto atualizado
-        return res.status(200).json(
-            meusProjetos[indiceEncontrado]
+    // 12. Retorna o projeto atualizado
+    return res.status(200).json(
+        meusProjetos[indiceEncontrado]
     );
-    
 });
+
 
 
 //rota para deletar um projeto pelo ID
