@@ -35,11 +35,24 @@ function validarStatus(status) {
     return statusPermitidos.includes(status);
 }
 
+
+function validarId(id) {
+    const numero = Number(id);
+
+    if (!Number.isInteger(numero) || numero <= 0) {
+        return false;
+    }
+
+    return true;
+}
+
+
 // Exporta as funções e constantes
 module.exports = {
     validarValores,
     verificarCamposInvalidos,
     validarStatus,
     camposPermitidos,
-    statusPermitidos
+    statusPermitidos,
+    validarId
 };

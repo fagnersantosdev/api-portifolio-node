@@ -2,12 +2,14 @@
 const express = require('express');
 const router = express.Router();
 const meusProjetos = require('../data/projetos');
+const validarIdMiddleware = require('../middlewares/validarIdMiddleware');
 
 const {
     validarValores,
     verificarCamposInvalidos,
     validarStatus,
-    statusPermitidos
+    statusPermitidos,
+    validarId
 } = require('../validators/projetoValidator');
 
 
@@ -23,7 +25,7 @@ router.get('/', (req, res) => {
 
 
 //rota para buscar um projeto específico pelo ID
-router.get('/:id', (req, res) =>{
+router.get('/:id', validarIdMiddleware,(req, res) =>{
     // 1. Captura e converte o ID da URL
     const idBuscado = Number(req.params.id);
     
@@ -32,16 +34,17 @@ router.get('/:id', (req, res) =>{
     
     // Lemos assim: "Se o projetoEncontrado existir (tiver conteúdo)..."
     if (projetoEncontrado) {
-        res.json(projetoEncontrado);
+        return res.status(200).json(projetoEncontrado);
     } else {
-        // Se não existir (for undefined), cai aqui e devolve o erro 404
-        res.status(404).json({ erro: "Projeto não encontrado" });
+        return res.status(404).json({
+            erro: "Projeto não encontrado"
+        });
     }
     
 });
 
 //rota para criar um novo projeto
-router.post('/', (req, res) => {
+router.post('/', validarIdMiddleware, (req, res) => {
 
     // 1. Verifica se o corpo é um objeto válido
     if (
@@ -114,7 +117,7 @@ router.post('/', (req, res) => {
 
 
 
-router.put('/:id', (req, res) => {
+router.put('/:id', validarIdMiddleware, (req, res) => {
     const idBuscado = Number(req.params.id);
     const atualizacao = req.body;
 
@@ -193,7 +196,7 @@ router.put('/:id', (req, res) => {
 
 
 
-router.patch('/:id', (req, res) => {
+router.patch('/:id', validarIdMiddleware, (req, res) => {
     // 1. Captura e converte o ID da URL
     const idBuscado = Number(req.params.id);
 
@@ -277,13 +280,14 @@ router.patch('/:id', (req, res) => {
 
 
 //rota para deletar um projeto pelo ID
-router.delete('/:id',(req, res) =>{
+router.delete('/:id', validarIdMiddleware, (req, res) =>{
     // 1. Captura e converte o ID da URL
     const idBuscado = Number(req.params.id);
 
     // 2. Busca o índice do projeto no array
     const indiceEncontrado = meusProjetos.findIndex(
         projeto => projeto.id === idBuscado);
+
     
     // 3. Se o índice for -1, significa que o projeto não foi encontrado
     if (indiceEncontrado === -1) {
