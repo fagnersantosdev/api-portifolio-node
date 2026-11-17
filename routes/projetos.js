@@ -8,8 +8,7 @@ const {
     validarValores,
     verificarCamposInvalidos,
     validarStatus,
-    statusPermitidos,
-    validarId
+    statusPermitidos
 } = require('../validators/projetoValidator');
 
 
@@ -44,7 +43,7 @@ router.get('/:id', validarIdMiddleware,(req, res) =>{
 });
 
 //rota para criar um novo projeto
-router.post('/', validarIdMiddleware, (req, res) => {
+router.post('/', (req, res) => {
 
     // 1. Verifica se o corpo é um objeto válido
     if (
